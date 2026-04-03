@@ -12,16 +12,14 @@
     <div id="auth-screen">
         <div class="auth-container">
             <h1 class="instagram-font">Aixain</h1>
-            <p class="auth-subtitle">Sign in to connect with your network.</p>
-            
+            <p class="auth-subtitle">Sign in to your network.</p>
             <form onsubmit="event.preventDefault(); handleAuth('login');">
                 <input type="email" id="email-input" class="auth-input" placeholder="Email Address" required>
-                <input type="password" id="password-input" class="auth-input" placeholder="Password" required>
+                <input type="password" id="password-input" class="auth-input" placeholder="Password (Min 6)" required>
                 <button type="submit" class="auth-btn btn-blue">Log In</button>
             </form>
-            
             <div class="divider"><span>OR</span></div>
-            <button onclick="handleAuth('create')" class="auth-btn btn-transparent">Create New Account</button>
+            <button onclick="handleAuth('create')" class="auth-btn btn-transparent">Create Account</button>
             <p id="auth-msg"></p>
         </div>
     </div>
@@ -33,24 +31,12 @@
             <div class="header-icons">
                 <i class="fa-regular fa-square-plus" onclick="switchTab('upload')"></i>
                 <i class="fa-regular fa-heart" onclick="toggleNotifications()"></i>
-                <div id="notif-badge" class="badge">3</div>
+                <div id="notif-badge" class="badge hidden">!</div>
             </div>
         </header>
 
         <div id="notifications-panel" class="hidden">
             <h3 style="padding: 15px; border-bottom: 1px solid #262626;">Activity</h3>
-            <div class="notif-item">
-                <div class="avatar small"></div>
-                <p><strong>Sarah_Code</strong> started following you.</p>
-            </div>
-            <div class="notif-item">
-                <div class="avatar small"></div>
-                <p><strong>GamerX</strong> liked your reel.</p>
-            </div>
-            <div class="notif-item">
-                <div class="avatar small"></div>
-                <p><strong>Alex_Pro</strong> left a comment.</p>
-            </div>
         </div>
 
         <main id="main-content">
@@ -58,9 +44,9 @@
             <div id="feed-tab" class="tab-content active">
                 <div class="feed-wrapper">
                     <div class="stories-container">
-                        <div class="story-bubble add-story"><i class="fa-solid fa-plus"></i><p>Your Story</p></div>
-                        <div class="story-bubble has-story" style="background-image: url('https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=100');"><p>Alex_Pro</p></div>
-                        <div class="story-bubble has-story" style="background-image: url('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100');"><p>Sarah_Code</p></div>
+                        <div class="story-bubble add-story" onclick="alert('Upload a story feature coming soon!')"><i class="fa-solid fa-plus"></i><p>Your Story</p></div>
+                        <div class="story-bubble has-story" onclick="viewStory('Alex_Pro')" style="background-image: url('https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=100');"><p>Alex_Pro</p></div>
+                        <div class="story-bubble has-story" onclick="viewStory('Sarah_Code')" style="background-image: url('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100');"><p>Sarah_Code</p></div>
                     </div>
                     <div id="feed-container"></div>
                 </div>
@@ -71,8 +57,8 @@
             </div>
 
             <div id="upload-tab" class="tab-content hidden">
-                <div class="feed-wrapper">
-                    <h2 class="section-title">Upload Media</h2>
+                <div class="feed-wrapper" style="padding: 20px;">
+                    <h2 class="section-title" style="border:none;">Upload Media</h2>
                     <div class="upload-options">
                         <button class="upload-btn active" id="btn-post" onclick="toggleUploadType('post')">Post</button>
                         <button class="upload-btn" id="btn-reel" onclick="toggleUploadType('reel')">Reel</button>
@@ -80,13 +66,13 @@
                     <div class="upload-area">
                         <label for="media-upload" class="square-preview" id="preview-box">
                             <i class="fa-regular fa-image" id="preview-icon" style="font-size: 50px; color: #555;"></i>
-                            <p id="preview-text">Tap to Open Gallery</p>
+                            <p id="preview-text">Tap Gallery</p>
                             <img id="image-preview" class="hidden preview-media">
                             <video id="video-preview" class="hidden preview-media" autoplay loop muted></video>
                         </label>
-                        <input type="file" id="media-upload" accept="image/*,video/*" class="hidden" onchange="loadGallery(event)">
+                        <input type="file" id="media-upload" accept="image/*,video/*" class="stealth-input" onchange="loadGallery(event)">
                         <input type="text" id="post-caption" class="caption-input" placeholder="Write a caption...">
-                        <button onclick="publishMedia()" class="btn-blue publish-btn">Share to World</button>
+                        <button onclick="publishMedia()" class="btn-blue publish-btn">Share</button>
                     </div>
                 </div>
             </div>
@@ -127,14 +113,13 @@
                 <div class="feed-wrapper">
                     <div class="profile-header-actions">
                         <span id="profile-username" style="font-size: 20px; font-weight: bold;">User</span>
-                        <i class="fa-solid fa-gear" style="font-size: 20px; cursor: pointer;" onclick="openSettings()"></i>
                     </div>
 
                     <div class="profile-header">
-                        <label for="pfp-upload" class="avatar large clickable-avatar" id="my-profile-pic">
+                        <label for="pfp-upload" class="avatar large clickable-avatar" id="my-profile-pic" style="cursor: pointer; z-index: 10;">
                             <div class="pfp-overlay"><i class="fa-solid fa-camera"></i></div>
                         </label>
-                        <input type="file" id="pfp-upload" accept="image/*" class="hidden" onchange="changeProfilePic(event)">
+                        <input type="file" id="pfp-upload" accept="image/*" class="stealth-input" onchange="changeProfilePic(event)">
                         
                         <div class="profile-stats">
                             <div class="stat"><strong id="stat-posts">0</strong><p>Posts</p></div>
@@ -145,33 +130,12 @@
                     <div class="profile-info">
                         <h3 id="profile-realname">Your Name</h3>
                         <p id="profile-bio">Welcome to my profile.</p>
-                        <p style="color: #888; font-size: 12px; margin-top: 5px;" id="profile-dob">DOB: Not set</p>
-                    </div>
-                    <div class="profile-actions">
-                        <button class="btn-transparent" onclick="openSettings()">Edit Profile</button>
-                        <button class="btn-transparent" onclick="alert('Link Copied!')">Share Profile</button>
                     </div>
                     <div class="profile-grid" id="my-profile-grid"></div>
                 </div>
             </div>
 
         </main>
-
-        <div id="settings-modal" class="hidden">
-            <div class="settings-content">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                    <h2>Edit Profile</h2>
-                    <i class="fa-solid fa-xmark" style="font-size: 24px; cursor: pointer;" onclick="closeSettings()"></i>
-                </div>
-                <label>Real Name</label>
-                <input type="text" id="edit-name" class="auth-input">
-                <label>Bio</label>
-                <input type="text" id="edit-bio" class="auth-input">
-                <label>Date of Birth</label>
-                <input type="date" id="edit-dob" class="auth-input">
-                <button class="btn-blue" onclick="saveSettings()">Save Changes</button>
-            </div>
-        </div>
 
         <nav class="bottom-nav">
             <button onclick="switchTab('feed')" class="nav-btn active-nav" id="nav-feed"><i class="fa-solid fa-house"></i></button>

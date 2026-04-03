@@ -1,36 +1,67 @@
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
-// Increase limit so the server can handle image/video data
-const io = require('socket.io')(http, { maxHttpBufferSize: 1e8 }); 
+const io = require('socket.io')(http);
 
 app.use(express.static('public'));
-app.use(express.json({limit: '50mb'}));
+
+// --- OUR REAL CLOUD DATABASE (In-Memory) ---
+const users = {}; // Tracks { email: { username, password, pfp, followers, following } }
+const posts = []; // Tracks all posts globally
 
 io.on('connection', (socket) => {
-    console.log('User connected: ' + socket.id);
+    console.log('User connected');
 
-    // Handle Square Feed Posts (Images)
-    socket.on('new_post', (postData) => {
-        io.emit('receive_post', postData);
+    // 1. REAL ACCOUNT CREATION & LOGIN
+    socket.on('create_account', (data) => {
+        if(users[data.email]) {
+            socket.emit('auth_error', "Account already exists! Please log in.");
+        } else {
+            users[data.email] = {
+                email: data.email,
+                username: data.email.split('@')[0], 
+                password: data.password,
+                pfp: "",
+                followers: [],
+                following: []
+            };
+            socket.emit('auth_success', users[data.email]);
+        }
     });
 
-    // Handle Reels (Videos)
-    socket.on('new_reel', (reelData) => {
-        io.emit('receive_reel', reelData);
+    socket.on('login', (data) => {
+        const user = users[data.email];
+        if(user && user.password === data.password) {
+            socket.emit('auth_success', user);
+        } else {
+            socket.emit('auth_error', "Wrong email or password. Are you using the correct account?");
+        }
     });
 
-    // Handle Chats
-    socket.on('send_message', (msgData) => {
-        io.emit('receive_message', msgData);
+    // 2. SAVING PROFILE PICTURES
+    socket.on('update_pfp', (data) => {
+        if(users[data.email]) {
+            users[data.email].pfp = data.pfp;
+        }
     });
 
-    socket.on('disconnect', () => {
-        console.log('User disconnected: ' + socket.id);
+    // 3. GLOBAL FEED
+    socket.on('new_post', (data) => {
+        posts.push(data);
+        io.emit('receive_post', data); // Broadcast to everyone
+    });
+    
+    socket.on('new_reel', (data) => {
+        io.emit('receive_reel', data);
+    });
+
+    // 4. REAL LIVE NOTIFICATIONS 
+    socket.on('send_notification', (data) => {
+        io.emit('receive_notification', data);
     });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-    console.log(`🚀 Aixain Social running on http://localhost:${PORT}`);
+    console.log(`Live Server running on port ${PORT}`);
 });
