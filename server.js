@@ -5,14 +5,12 @@ const io = require('socket.io')(http);
 
 app.use(express.static('public'));
 
-// --- OUR REAL CLOUD DATABASE (In-Memory) ---
-const users = {}; // Tracks { email: { username, password, pfp, followers, following } }
-const posts = []; // Tracks all posts globally
+const users = {}; 
+const posts = []; 
 
 io.on('connection', (socket) => {
     console.log('User connected');
 
-    // 1. REAL ACCOUNT CREATION & LOGIN
     socket.on('create_account', (data) => {
         if(users[data.email]) {
             socket.emit('auth_error', "Account already exists! Please log in.");
@@ -23,7 +21,8 @@ io.on('connection', (socket) => {
                 password: data.password,
                 pfp: "",
                 followers: [],
-                following: []
+                following: [],
+                isPrivate: false // Ready for phase 2
             };
             socket.emit('auth_success', users[data.email]);
         }
@@ -34,28 +33,40 @@ io.on('connection', (socket) => {
         if(user && user.password === data.password) {
             socket.emit('auth_success', user);
         } else {
-            socket.emit('auth_error', "Wrong email or password. Are you using the correct account?");
+            socket.emit('auth_error', "Wrong email or password.");
         }
     });
 
-    // 2. SAVING PROFILE PICTURES
     socket.on('update_pfp', (data) => {
-        if(users[data.email]) {
-            users[data.email].pfp = data.pfp;
-        }
+        if(users[data.email]) users[data.email].pfp = data.pfp;
     });
 
-    // 3. GLOBAL FEED
+    // --- NEW: LIVE SEARCH ENGINE ---
+    socket.on('search_users', (query) => {
+        if(!query) {
+            socket.emit('search_results', []);
+            return;
+        }
+        const results = Object.values(users)
+            .filter(u => u.username.toLowerCase().includes(query.toLowerCase()))
+            .map(u => ({ username: u.username, pfp: u.pfp }));
+        socket.emit('search_results', results);
+    });
+
+    // --- NEW: STORY UPLOADS ---
+    socket.on('new_story', (data) => {
+        io.emit('receive_story', data);
+    });
+
     socket.on('new_post', (data) => {
         posts.push(data);
-        io.emit('receive_post', data); // Broadcast to everyone
+        io.emit('receive_post', data); 
     });
     
     socket.on('new_reel', (data) => {
         io.emit('receive_reel', data);
     });
 
-    // 4. REAL LIVE NOTIFICATIONS 
     socket.on('send_notification', (data) => {
         io.emit('receive_notification', data);
     });

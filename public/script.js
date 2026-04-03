@@ -5,7 +5,6 @@ let uploadMode = "post";
 let currentFileData = null; 
 let postCount = 0;
 let userPfpData = ""; 
-let followingList = []; 
 
 function handleAuth(action) {
     const email = document.getElementById('email-input').value;
@@ -13,7 +12,7 @@ function handleAuth(action) {
     const msgBox = document.getElementById('auth-msg');
 
     if(!email.includes('@') || password.length < 6) {
-        msgBox.innerText = "Invalid email or password is too short (min 6).";
+        msgBox.innerText = "Invalid email or password is too short.";
         return;
     }
     if(action === 'create') {
@@ -35,14 +34,11 @@ socket.on('auth_success', (userData) => {
     
     document.getElementById('profile-username').innerText = "@" + currentUser;
     document.getElementById('profile-realname').innerText = currentUser.toUpperCase();
-    document.getElementById('stat-followers').innerText = userData.followers.length;
-    document.getElementById('stat-following').innerText = userData.following.length;
 
     if(userPfpData) {
         document.getElementById('my-profile-pic').style.backgroundImage = `url(${userPfpData})`;
         document.getElementById('nav-pfp').style.backgroundImage = `url(${userPfpData})`;
     }
-    document.getElementById('notifications-panel').innerHTML = `<h3 style="padding: 15px; border-bottom: 1px solid #262626;">Activity</h3>`;
 });
 
 function switchTab(tabName) {
@@ -53,17 +49,66 @@ function switchTab(tabName) {
     document.getElementById('notifications-panel').classList.add('hidden');
 }
 
+function switchChatView(view) {
+    document.getElementById('messages-view').classList.add('hidden');
+    document.getElementById('friends-view').classList.add('hidden');
+    document.querySelectorAll('.chat-tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(view + '-view').classList.remove('hidden');
+    event.target.classList.add('active');
+}
+
 function toggleNotifications() {
     document.getElementById('notifications-panel').classList.toggle('hidden');
     document.getElementById('notif-badge').classList.add('hidden');
 }
 
-// FIX: STORY LOGIC ADDED
-function viewStory(username) {
-    alert(`Viewing ${username}'s story! (Story video viewer opening...)`);
+// --- NEW: SEARCH ENGINE LOGIC ---
+function executeSearch() {
+    const query = document.getElementById('friend-search').value;
+    socket.emit('search_users', query);
 }
 
-// FIX: PROFILE PICTURE UPLOAD
+socket.on('search_results', (results) => {
+    const list = document.getElementById('search-results-list');
+    list.innerHTML = "";
+    if(results.length === 0) {
+        list.innerHTML = `<p style="padding:20px; color:#555;">No users found.</p>`;
+        return;
+    }
+    results.forEach(user => {
+        const pfpStyle = user.pfp ? `background-image: url(${user.pfp});` : '';
+        list.innerHTML += `
+            <div class="search-result-item">
+                <div class="avatar small" style="${pfpStyle}"></div>
+                <span><strong>${user.username}</strong></span>
+            </div>
+        `;
+    });
+});
+
+// --- NEW: STORY UPLOAD LOGIC ---
+function uploadStory(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const storyData = e.target.result;
+        socket.emit('new_story', { user: currentUser, pfp: userPfpData, image: storyData });
+        alert("Story Uploaded Successfully!");
+    };
+    reader.readAsDataURL(file);
+}
+
+socket.on('receive_story', (data) => {
+    const storyBar = document.getElementById('story-bar');
+    const pfpStyle = data.image ? `background-image: url(${data.image});` : '';
+    storyBar.innerHTML += `
+        <div class="story-bubble has-story" style="${pfpStyle}" onclick="alert('Viewing ${data.user}\\n(Story viewer UI coming soon!)')">
+            <p>${data.user}</p>
+        </div>
+    `;
+});
+
 function changeProfilePic(event) {
     const file = event.target.files[0];
     if(!file) return;
@@ -73,34 +118,9 @@ function changeProfilePic(event) {
         document.getElementById('my-profile-pic').style.backgroundImage = `url(${userPfpData})`;
         document.getElementById('nav-pfp').style.backgroundImage = `url(${userPfpData})`;
         socket.emit('update_pfp', { email: currentEmail, pfp: userPfpData });
-        alert("Profile picture updated successfully!");
     };
     reader.readAsDataURL(file);
 }
-
-function toggleLike(icon, postOwner) {
-    icon.classList.toggle('fa-regular');
-    icon.classList.toggle('fa-solid');
-    icon.classList.toggle('liked');
-    if(icon.classList.contains('liked') && postOwner !== currentUser) {
-        socket.emit('send_notification', { targetUser: postOwner, fromUser: currentUser, message: `liked your post ❤️` });
-    }
-}
-
-function openComment(postOwner) {
-    const comment = prompt('Type your comment:');
-    if(comment && postOwner !== currentUser) {
-        socket.emit('send_notification', { targetUser: postOwner, fromUser: currentUser, message: `commented: "${comment}"` });
-    }
-}
-
-socket.on('receive_notification', (data) => {
-    if(data.targetUser === currentUser) {
-        const panel = document.getElementById('notifications-panel');
-        panel.innerHTML += `<div class="notif-item"><div class="avatar small" style="background: #0095f6;"></div><p><strong>${data.fromUser}</strong> ${data.message}</p></div>`;
-        document.getElementById('notif-badge').classList.remove('hidden');
-    }
-});
 
 function toggleUploadType(type) {
     uploadMode = type;
@@ -153,15 +173,21 @@ function publishMedia() {
 socket.on('receive_post', (data) => {
     const feed = document.getElementById('feed-container');
     const pfpStyle = data.pfp ? `background-image: url(${data.pfp});` : '';
-    const postHTML = `
+    feed.innerHTML = `
         <div class="post">
             <div class="post-header"><div class="avatar small" style="${pfpStyle}"></div><span>${data.user}</span></div>
             <div class="post-media-container"><img src="${data.media}" class="post-real-image"></div>
-            <div class="post-actions">
-                <i class="fa-regular fa-heart action-icon" onclick="toggleLike(this, '${data.user}')"></i>
-                <i class="fa-regular fa-comment action-icon" onclick="openComment('${data.user}')"></i>
-            </div>
+            <div class="post-actions"><i class="fa-regular fa-heart action-icon" onclick="this.classList.toggle('fa-solid'); this.classList.toggle('liked');"></i></div>
             <div class="post-caption"><strong>${data.user}</strong> ${data.caption}</div>
-        </div>`;
-    feed.innerHTML = postHTML + feed.innerHTML; 
+        </div>` + feed.innerHTML; 
+});
+
+socket.on('receive_reel', (data) => {
+    const reelsContainer = document.getElementById('reels-container');
+    reelsContainer.innerHTML += `
+        <div class="reel-video-box">
+            <video class="real-reel-vid" src="${data.media}" autoplay loop muted playsinline></video>
+            <div class="reel-overlay"><strong>@${data.user}</strong><p>${data.caption}</p></div>
+        </div>
+    `;
 });

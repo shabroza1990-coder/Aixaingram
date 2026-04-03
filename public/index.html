@@ -43,17 +43,19 @@
             
             <div id="feed-tab" class="tab-content active">
                 <div class="feed-wrapper">
-                    <div class="stories-container">
-                        <div class="story-bubble add-story" onclick="alert('Upload a story feature coming soon!')"><i class="fa-solid fa-plus"></i><p>Your Story</p></div>
-                        <div class="story-bubble has-story" onclick="viewStory('Alex_Pro')" style="background-image: url('https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=100');"><p>Alex_Pro</p></div>
-                        <div class="story-bubble has-story" onclick="viewStory('Sarah_Code')" style="background-image: url('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100');"><p>Sarah_Code</p></div>
+                    <div class="stories-container" id="story-bar">
+                        <label for="story-upload" class="story-bubble add-story" style="cursor: pointer;">
+                            <i class="fa-solid fa-plus"></i><p>Your Story</p>
+                        </label>
+                        <input type="file" id="story-upload" accept="image/*" class="stealth-input" onchange="uploadStory(event)">
                     </div>
                     <div id="feed-container"></div>
                 </div>
             </div>
 
             <div id="reels-tab" class="tab-content hidden">
-                <div id="reels-container" class="reel-scroll-area"></div>
+                <div id="reels-container" class="reel-scroll-area">
+                    </div>
             </div>
 
             <div id="upload-tab" class="tab-content hidden">
@@ -81,30 +83,19 @@
                 <div class="feed-wrapper" style="height: 100%; display: flex; flex-direction: column;">
                     <div class="chat-header-tabs">
                         <button class="chat-tab-btn active" onclick="switchChatView('messages')">Messages</button>
-                        <button class="chat-tab-btn" onclick="switchChatView('friends')">Network</button>
+                        <button class="chat-tab-btn" onclick="switchChatView('friends')">Search</button>
                     </div>
 
                     <div id="messages-view">
-                        <div id="inbox-list"></div>
-                        <div id="active-private-chat" class="hidden">
-                            <div class="private-chat-header">
-                                <button class="btn-transparent" onclick="closePrivateChat()"><i class="fa-solid fa-arrow-left"></i></button>
-                                <span id="chatting-with-name" style="font-weight:bold;">User</span>
-                            </div>
-                            <div id="chat-box"></div>
-                            <div class="chat-input-area">
-                                <input type="text" id="chat-input" placeholder="Message...">
-                                <button onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
-                            </div>
-                        </div>
+                        <div id="inbox-list"><p style="padding:20px; color:#555;">No messages yet.</p></div>
                     </div>
 
                     <div id="friends-view" class="hidden">
                         <div class="search-box">
                             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                            <input type="text" id="friend-search" placeholder="Search people..." onkeyup="searchFriends()">
+                            <input type="text" id="friend-search" placeholder="Search accounts..." onkeyup="executeSearch()">
                         </div>
-                        <div id="friend-list"></div>
+                        <div id="search-results-list"></div>
                     </div>
                 </div>
             </div>
